@@ -757,7 +757,7 @@ tokens = tokenizer.encode("I had a breakfast")
               <div class="flex items-center gap-2">
                 <button onclick="setSpotlight(Math.max(0, spotlightWordIndex - 1))" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700">이전</button>
                 <span class="font-bold text-amber-400 font-mono px-2">${curSentData.tokens[spotlightWordIndex] || curSentData.tokens[0]}</span>
-                <button onclick="setSpotlight(Math.min(curSentData.tokens.length - 1, spotlightWordIndex + 1))" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700">다음</button>
+                <button onclick="setSpotlight(Math.min(sentences[selectedSentenceIndex].tokens.length - 1, spotlightWordIndex + 1))" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700">다음</button>
               </div>
               <span class="text-[11px] text-slate-400">조명이 비추는 단어에 따라 번역 결과가 결정됩니다.</span>
             </div>
