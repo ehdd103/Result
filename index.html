@@ -3,292 +3,922 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>하노이의 탑 프로 애니메이션 시뮬레이터</title>
+  <title>AI 번역 연구소 (AI Machine Translation Lab)</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Phosphor Icons for UI icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <!-- KaTeX for LaTeX Math Rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;800&display=swap');
-    body { font-family: 'Pretendard', sans-serif; background-color: #f8fafc; }
-    
-    /* 원판 스타일 */
-    .disk {
-      position: absolute;
-      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-      z-index: 10;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Pretendard', sans-serif;
     }
-
-    /* 로그 스크롤바 커스텀 */
-    #logs-container::-webkit-scrollbar { width: 4px; }
-    #logs-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.05);
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(156, 163, 175, 0.5);
+      border-radius: 4px;
+    }
+    .pulse-animation {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.85; transform: scale(1.03); }
+    }
   </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-blue-600 selection:text-white">
 
-  <div class="max-w-6xl mx-auto">
-    <!-- 헤더 영역 -->
-    <div class="flex justify-between items-center mb-8">
-      <div>
-        <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Hanoi Top <span class="text-indigo-600">Pro</span></h1>
-        <p class="text-slate-500 font-medium">부드러운 애니메이션 교육용 시뮬레이터</p>
+  <!-- Header Section -->
+  <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50 px-4 py-3">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-blue-500/20">
+          <i class="ph-bold ph-translate"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            AI 기계번역 원리 시뮬레이터
+            <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">Interactive Lab</span>
+          </h1>
+          <p class="text-xs text-slate-400">규칙 기반부터 트랜스포머 어텐션까지 번역 알고리즘의 모든 것</p>
+        </div>
       </div>
-      <div class="flex gap-4">
-        <div class="text-right">
-          <p class="text-xs font-bold text-slate-400 uppercase">최소 이동</p>
-          <p id="min-moves" class="text-xl font-black text-indigo-600">15</p>
-        </div>
-        <div class="text-right">
-          <p class="text-xs font-bold text-slate-400 uppercase">현재 이동</p>
-          <p id="current-moves" class="text-xl font-black text-slate-900">0</p>
-        </div>
+
+      <!-- Level Switcher -->
+      <div class="flex items-center bg-slate-900 border border-slate-700/80 p-1 rounded-xl shadow-inner text-xs sm:text-sm font-medium">
+        <button id="btn-lv1" onclick="switchLevel(1)" class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-blue-400 bg-blue-500/20 shadow-sm border border-blue-500/30 font-bold">
+          <i class="ph-bold ph-baby"></i> Lv.1 중학생 <span class="text-[10px] opacity-75">(비유)</span>
+        </button>
+        <button id="btn-lv2" onclick="switchLevel(2)" class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-slate-400 hover:text-slate-200 font-medium">
+          <i class="ph-bold ph-student"></i> Lv.2 고등학생 <span class="text-[10px] opacity-75">(벡터/확률)</span>
+        </button>
+        <button id="btn-lv3" onclick="switchLevel(3)" class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-slate-400 hover:text-slate-200 font-medium">
+          <i class="ph-bold ph-cpu"></i> Lv.3 심화 <span class="text-[10px] opacity-75">(Q,K,V 행렬)</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl w-full mx-auto p-4 flex-1 flex flex-col gap-6">
+
+    <!-- Top Input & Control Bar -->
+    <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex-1 w-full flex flex-col sm:flex-row items-center gap-3">
+        <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider shrink-0 flex items-center gap-1">
+          <i class="ph-bold ph-text-t"></i> 입력 문장:
+        </label>
+        <select id="sample-sentence" onchange="changeSentence()" class="w-full sm:w-auto bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+          <option value="0">I had a delicious breakfast here. (다의어 had 번역)</option>
+          <option value="1">The apple fell from the tree because it was ripe. (대명사 it 참조)</option>
+          <option value="2">I want to study computer science. (기초 구문 번역)</option>
+        </select>
+      </div>
+
+      <!-- Pipeline Step Buttons -->
+      <div class="flex items-center gap-1 bg-slate-900/80 border border-slate-700/80 p-1 rounded-xl w-full md:w-auto justify-center overflow-x-auto">
+        <button onclick="setStep(1)" id="step-btn-1" class="px-3 py-1.5 text-xs rounded-lg font-bold transition-all bg-blue-600 text-white shadow">1. 토큰화</button>
+        <i class="ph-bold ph-caret-right text-slate-600 text-xs"></i>
+        <button onclick="setStep(2)" id="step-btn-2" class="px-3 py-1.5 text-xs rounded-lg font-medium transition-all text-slate-400 hover:text-white">2. 임베딩</button>
+        <i class="ph-bold ph-caret-right text-slate-600 text-xs"></i>
+        <button onclick="setStep(3)" id="step-btn-3" class="px-3 py-1.5 text-xs rounded-lg font-medium transition-all text-slate-400 hover:text-white">3. 인코더/문맥</button>
+        <i class="ph-bold ph-caret-right text-slate-600 text-xs"></i>
+        <button onclick="setStep(4)" id="step-btn-4" class="px-3 py-1.5 text-xs rounded-lg font-medium transition-all text-slate-400 hover:text-white">4. 어텐션/디코더</button>
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+    <!-- Main Dynamic Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
       
-      <!-- 설정 패널 -->
-      <div class="lg:col-span-1 space-y-6">
-        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-          <label class="block text-sm font-bold text-slate-700 mb-4">원판 개수: <span id="disk-val" class="text-indigo-600">4</span></label>
-          <input type="range" id="disk-range" min="3" max="8" value="4" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
-          
-          <label class="block text-sm font-bold text-slate-700 mt-8 mb-4">재생 속도</label>
-          <input type="range" id="speed-range" min="100" max="1500" value="700" step="100" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" style="direction: rtl;">
-          <div class="flex justify-between text-[10px] text-slate-400 mt-2 font-bold uppercase">
-            <span>Slow</span>
-            <span>Fast</span>
+      <!-- Left Section: Visual Simulator Workspace (7 cols) -->
+      <div class="lg:col-span-7 bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden min-h-[480px]">
+        
+        <!-- Header Info Tag -->
+        <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-700/60">
+          <div class="flex items-center gap-2">
+            <span id="visual-step-badge" class="px-2.5 py-1 rounded-md text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">
+              STEP 1: 토큰화 (Tokenization)
+            </span>
+            <span id="visual-level-badge" class="text-xs text-slate-400 font-medium">Level 1: 비유 모드</span>
           </div>
-        </div>
-
-        <div class="flex flex-col gap-2">
-          <button id="play-pause" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">
-            <i data-lucide="play" class="w-5 h-5 fill-current"></i> <span>시작하기</span>
-          </button>
-          <button id="reset" class="w-full py-4 bg-white text-slate-600 border border-slate-200 rounded-2xl font-bold hover:bg-slate-50 transition-all flex items-center justify-center gap-2">
-            <i data-lucide="refresh-cw" class="w-5 h-5"></i> 초기화
+          <button onclick="toggleAutoPlay()" id="play-btn" class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 transition">
+            <i class="ph-bold ph-play" id="play-icon"></i> <span id="play-text">자동 시연</span>
           </button>
         </div>
 
-        <!-- 이동 로그 -->
-        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 h-[300px] flex flex-col">
-          <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <i data-lucide="list-ordered" class="w-4 h-4 text-indigo-500"></i> 이동 경로
-          </h3>
-          <div id="logs-container" class="flex-1 overflow-y-auto space-y-2"></div>
+        <!-- Dynamic Visual Render Area -->
+        <div id="visual-canvas" class="flex-1 flex flex-col justify-center items-center p-4 relative min-h-[320px]">
+          <!-- Dynamic Content Rendered by JS -->
+        </div>
+
+        <!-- Bottom Interactive Hands-On Control Dock -->
+        <div id="interactive-dock" class="mt-4 pt-4 border-t border-slate-700/60 bg-slate-900/60 rounded-xl p-3">
+          <!-- Controls rendered dynamically based on Level & Step -->
         </div>
       </div>
 
-      <!-- 메인 시뮬레이션 보드 -->
-      <div class="lg:col-span-3 bg-white rounded-[40px] shadow-sm border border-slate-200 p-8 relative min-h-[500px] flex items-end justify-around">
+      <!-- Right Section: Explanation & Code/Theory Panel (5 cols) -->
+      <div class="lg:col-span-5 flex flex-col gap-4">
         
-        <!-- 기둥들 -->
-        <div id="peg-0" class="relative w-4 h-64 bg-slate-200 rounded-full flex justify-center">
-            <span class="absolute -bottom-10 font-black text-slate-300 text-2xl">A</span>
-        </div>
-        <div id="peg-1" class="relative w-4 h-64 bg-slate-200 rounded-full flex justify-center">
-            <span class="absolute -bottom-10 font-black text-slate-300 text-2xl">B</span>
-        </div>
-        <div id="peg-2" class="relative w-4 h-64 bg-slate-200 rounded-full flex justify-center">
-            <span class="absolute -bottom-10 font-black text-slate-300 text-2xl">C</span>
+        <!-- Level Explanation Card -->
+        <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5 flex-1 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h2 id="theory-title" class="text-base font-bold text-white flex items-center gap-2">
+                <i class="ph-bold ph-lightbulb text-amber-400 text-lg"></i> 문장을 레고 블록으로 쪼개기
+              </h2>
+              <span id="theory-tag" class="text-[11px] px-2 py-0.5 rounded bg-slate-700 text-slate-300">개념 이해</span>
+            </div>
+            
+            <p id="theory-description" class="text-sm text-slate-300 leading-relaxed mb-4">
+              컴퓨터는 문장 전체를 한번에 이해하지 못합니다. 마치 레고 블록을 조립하듯 문장을 아주 작은 의미 단위(단어 또는 조각)로 나누는 과정이 필요합니다.
+            </p>
+
+            <div id="analogy-box" class="bg-blue-950/40 border border-blue-800/40 rounded-xl p-3.5 mb-4 text-xs text-blue-200 flex items-start gap-3">
+              <i class="ph-fill ph-chat-teardrop-dots text-blue-400 text-lg shrink-0 mt-0.5"></i>
+              <div>
+                <strong class="font-semibold block mb-0.5 text-blue-300" id="analogy-heading">중학생을 위한 쉬운 비유</strong>
+                <span id="analogy-text">긴 문장을 읽기 전에 단어 카드 하나하나로 분리해 정렬하는 카드 정리 작업과 같습니다.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Code or Tensor Spec Panel (Visible in Lv 2 & 3) -->
+          <div id="technical-panel" class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 font-mono text-xs text-slate-300 hidden">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2 text-[11px] text-slate-400 font-sans">
+              <span class="flex items-center gap-1.5 font-semibold text-slate-300"><i class="ph-bold ph-code"></i> AI 텐서 및 수식 스펙</span>
+              <span id="tensor-shape" class="text-blue-400 bg-blue-950/80 px-1.5 py-0.5 rounded border border-blue-800/60">Shape: [1, 6]</span>
+            </div>
+            <pre id="technical-code" class="text-emerald-400 overflow-x-auto text-[11px] leading-relaxed">
+// Token IDs Tensor
+tokens = tokenizer.encode("I had a breakfast")
+// Output: [101, 1045, 2018, 1037, 6350, 102]
+            </pre>
+          </div>
         </div>
 
-        <!-- 원판들이 배치될 레이어 (JavaScript에서 생성) -->
-        <div id="board-canvas" class="absolute inset-0 pointer-events-none"></div>
+        <!-- Real-world Translation Comparison Card -->
+        <div class="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-4 text-xs">
+          <h3 class="font-bold text-slate-200 mb-2 flex items-center gap-1.5">
+            <i class="ph-bold ph-git-fork text-blue-400"></i> 번역 알고리즘의 진화 관점
+          </h3>
+          <div class="grid grid-cols-3 gap-2 text-center text-[11px]">
+            <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-700/40">
+              <div class="text-slate-400 font-medium">1세대 (규칙기반)</div>
+              <div class="text-rose-400 font-bold mt-0.5">직역/어색함</div>
+            </div>
+            <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-700/40">
+              <div class="text-slate-400 font-medium">2세대 (통계기반)</div>
+              <div class="text-amber-400 font-bold mt-0.5">단어/구문 확률</div>
+            </div>
+            <div class="bg-blue-950/60 p-2 rounded-lg border border-blue-500/30">
+              <div class="text-blue-300 font-medium">3세대 (신경망/ATTN)</div>
+              <div class="text-emerald-400 font-bold mt-0.5">문맥 완벽 반영</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal for Lv3 Q,K,V Math Info -->
+  <div id="matrix-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative">
+      <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl">
+        <i class="ph-bold ph-x"></i>
+      </button>
+      <h3 class="text-base font-bold text-white flex items-center gap-2">
+        <i class="ph-bold ph-calculator text-blue-400"></i> Scaled Dot-Product Attention 상세
+      </h3>
+      <div id="modal-body" class="text-xs text-slate-300 space-y-3 font-mono">
+        <!-- Dynamic Content -->
+      </div>
+      <div class="flex justify-end pt-2">
+        <button onclick="closeModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold">닫기</button>
       </div>
     </div>
   </div>
 
   <script>
-    lucide.createIcons();
+    // Global Application State
+    let currentLevel = 1; // 1: Middle, 2: High, 3: Advanced
+    let currentStep = 1;  // 1: Token, 2: Embed, 3: Context, 4: Attention/Decoder
+    let selectedSentenceIndex = 0;
+    let isPlaying = false;
+    let autoPlayTimer = null;
 
-    // 설정값
-    const colors = [
-      '#6366f1', '#ec4899', '#f59e0b', '#10b981', 
-      '#3b82f6', '#8b5cf6', '#f43f5e', '#06b6d4'
+    let spotlightWordIndex = 0; // For Lv1 Attention Spotlight
+    let cosineAngle = 30; // For Lv2 Embedding Angle
+    let selectedPos = 0; // For Lv3 Positional Encoding position
+    let softmaxTemp = 1.0; // For Lv2 Temperature
+
+    const sentences = [
+      {
+        text: "I had a delicious breakfast here.",
+        tokens: ["I", "had", "a", "delicious", "breakfast", "here"],
+        subwords: ["I", "had", "a", "deli", "##cious", "break", "##fast", "here"],
+        tokenMap: [
+          { src: "I", tgt: "나는", desc: "주어 'I' ➔ '나는'" },
+          { src: "had", tgt: "먹었다", desc: "'had' + 'breakfast' 맥락 연관 ➔ '가졌다'가 아닌 '먹었다'!" },
+          { src: "a", tgt: "(생략)", desc: "한국어 표현상 관사 'a' 자연스럽게 생략" },
+          { src: "delicious", tgt: "맛있는", desc: "형용사 'delicious' ➔ '맛있는'" },
+          { src: "breakfast", tgt: "아침을", desc: "목적어 'breakfast' ➔ '아침을'" },
+          { src: "here", tgt: "여기서", desc: "장소 부사 'here' ➔ '여기서'" }
+        ],
+        translations: {
+          rulemode: "나는 가졌다 한 맛있는 아침식사 여기서.",
+          attnmode: "나는 여기서 맛있는 아침을 먹었다."
+        },
+        embedCoords: [
+          { word: "I", x: 20, y: 80, cat: "대명사" },
+          { word: "had", x: 60, y: 30, cat: "동사" },
+          { word: "breakfast", x: 80, y: 40, cat: "음식" },
+          { word: "delicious", x: 75, y: 60, cat: "형용사" }
+        ],
+        attentionWeights: [0.85, 0.75, 0.02, 0.75, 0.60, 0.75],
+        tgtTokens: ["나는", "여기서", "맛있는", "아침을", "먹었다"]
+      },
+      {
+        text: "The apple fell from the tree because it was ripe.",
+        tokens: ["The", "apple", "fell", "from", "tree", "because", "it", "was", "ripe"],
+        subwords: ["The", "apple", "fell", "from", "the", "tree", "be", "##cause", "it", "was", "ripe"],
+        tokenMap: [
+          { src: "The", tgt: "(생략)", desc: "정관사 'The' 생략" },
+          { src: "apple", tgt: "사과가", desc: "주어 명사 'apple' ➔ '사과가'" },
+          { src: "fell", tgt: "떨어졌다", desc: "동사 'fell' ➔ '떨어졌다'" },
+          { src: "from", tgt: "~에서", desc: "전치사 'from' ➔ '~에서'" },
+          { src: "tree", tgt: "나무", desc: "명사 'tree' ➔ '나무'" },
+          { src: "because", tgt: "~때문에", desc: "접속사 'because' ➔ '~때문에'" },
+          { src: "it", tgt: "사과(it)", desc: "Self-Attention: 'it'이 앞의 'apple'을 가리킴을 파악!" },
+          { src: "was", tgt: "(과거시제)", desc: "과거 시제 수식어구" },
+          { src: "ripe", tgt: "익었기", desc: "형용사 'ripe' ➔ '익었기'" }
+        ],
+        translations: {
+          rulemode: "사과 떨어졌다 나무 그것 익었다.",
+          attnmode: "사과가 익었기 때문에 나무에서 떨어졌다."
+        },
+        embedCoords: [
+          { word: "apple", x: 80, y: 30, cat: "사물/과일" },
+          { word: "tree", x: 85, y: 50, cat: "사물/식물" },
+          { word: "it", x: 70, y: 35, cat: "지칭대명사" },
+          { word: "fell", x: 30, y: 70, cat: "동작" }
+        ],
+        attentionWeights: [0.10, 0.80, 0.05, 0.01, 0.01, 0.05, 0.70, 0.01, 0.04],
+        tgtTokens: ["사과가", "익었기", "때문에", "나무에서", "떨어졌다"]
+      },
+      {
+        text: "I want to study computer science.",
+        tokens: ["I", "want", "to", "study", "computer", "science"],
+        subwords: ["I", "want", "to", "study", "com", "##puter", "sci", "##ence"],
+        tokenMap: [
+          { src: "I", tgt: "나는", desc: "주어 'I' ➔ '나는'" },
+          { src: "want", tgt: "싶다", desc: "동사 'want' ➔ '~하고 싶다'" },
+          { src: "to", tgt: "(연결어)", desc: "to 부정사 연결구문" },
+          { src: "study", tgt: "공부하고", desc: "동사 'study' ➔ '공부하고'" },
+          { src: "computer", tgt: "컴퓨터", desc: "명사 'computer' ➔ '컴퓨터'" },
+          { src: "science", tgt: "공학을", desc: "명사 'science' ➔ '공학/과학을'" }
+        ],
+        translations: {
+          rulemode: "나는 원한다 공부하다 컴퓨터 과학.",
+          attnmode: "나는 컴퓨터 공학을 공부하고 싶다."
+        },
+        embedCoords: [
+          { word: "I", x: 20, y: 80, cat: "주어" },
+          { word: "study", x: 40, y: 30, cat: "행동" },
+          { word: "computer", x: 70, y: 65, cat: "학문/기술" },
+          { word: "science", x: 75, y: 70, cat: "학문/기술" }
+        ],
+        attentionWeights: [0.90, 0.65, 0.01, 0.85, 0.70, 0.70],
+        tgtTokens: ["나는", "컴퓨터공학을", "공부하고", "싶다"]
+      }
     ];
 
-    let state = {
-      n: 4,
-      speed: 700,
-      pegs: [[], [], []],
-      moves: [],
-      currentStep: 0,
-      isPlaying: false,
-      isAnimating: false,
-      diskElements: {}
+    // Initialize Page
+    window.onload = function() {
+      renderAll();
     };
 
-    // DOM 참조
-    const board = document.getElementById('board-canvas');
-    const logs = document.getElementById('logs-container');
-    const diskRange = document.getElementById('disk-range');
-    const speedRange = document.getElementById('speed-range');
-    const playPauseBtn = document.getElementById('play-pause');
-    const resetBtn = document.getElementById('reset');
-
-    // 하노이 알고리즘
-    function solve(n, from, to, aux) {
-      if (n === 0) return;
-      solve(n - 1, from, aux, to);
-      state.moves.push({ n, from, to });
-      solve(n - 1, aux, to, from);
-    }
-
-    // 시뮬레이터 초기화
-    function init() {
-      state.n = parseInt(diskRange.value);
-      state.speed = parseInt(speedRange.value);
-      state.pegs = [[], [], []];
-      state.moves = [];
-      state.currentStep = 0;
-      state.isPlaying = false;
-      state.isAnimating = false;
-      state.diskElements = {};
-      
-      board.innerHTML = '';
-      logs.innerHTML = '';
-      document.getElementById('disk-val').innerText = state.n;
-      document.getElementById('min-moves').innerText = Math.pow(2, state.n) - 1;
-      document.getElementById('current-moves').innerText = 0;
-      updatePlayBtn();
-
-      solve(state.n, 0, 2, 1);
-
-      // 원판 생성 및 초기 배치
-      for (let i = state.n; i >= 1; i--) {
-        createDisk(i);
-        state.pegs[0].push(i);
-      }
-      renderInitialPositions();
-    }
-
-    function createDisk(num) {
-      const el = document.createElement('div');
-      el.className = 'disk';
-      el.style.width = `${60 + num * 25}px`;
-      el.style.height = '24px';
-      el.style.backgroundColor = colors[num - 1];
-      el.style.color = 'white';
-      el.style.fontSize = '12px';
-      el.style.fontWeight = '800';
-      el.innerText = num;
-      board.appendChild(el);
-      state.diskElements[num] = el;
-    }
-
-    function getCoord(pegIdx, floorIdx) {
-      const pegEl = document.getElementById(`peg-${pegIdx}`);
-      const boardRect = board.getBoundingClientRect();
-      const pegRect = pegEl.getBoundingClientRect();
-
-      const x = pegRect.left - boardRect.left + pegRect.width / 2;
-      const y = boardRect.height - (floorIdx * 28) - 40; // 바닥 기준 높이
-      return { x, y };
-    }
-
-    function renderInitialPositions() {
-      state.pegs.forEach((disks, pIdx) => {
-        disks.forEach((dNum, fIdx) => {
-          const { x, y } = getCoord(pIdx, fIdx);
-          const el = state.diskElements[dNum];
-          el.style.left = `${x - el.offsetWidth / 2}px`;
-          el.style.top = `${y}px`;
-        });
+    function switchLevel(level) {
+      currentLevel = level;
+      [1, 2, 3].forEach(l => {
+        const btn = document.getElementById(`btn-lv${l}`);
+        if (btn) {
+          if (l === level) {
+            btn.className = "px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-blue-400 bg-blue-500/20 shadow-sm border border-blue-500/30 font-bold";
+          } else {
+            btn.className = "px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-slate-400 hover:text-slate-200 font-medium";
+          }
+        }
       });
+      renderAll();
     }
 
-    // 핵심: 애니메이션 이동 함수
-    async function animateMove(dNum, from, to) {
-      state.isAnimating = true;
-      const el = state.diskElements[dNum];
-      const targetFloor = state.pegs[to].length;
+    function setStep(step) {
+      currentStep = step;
+      [1, 2, 3, 4].forEach(s => {
+        const btn = document.getElementById(`step-btn-${s}`);
+        if (btn) {
+          if (s === step) {
+            btn.className = "px-3 py-1.5 text-xs rounded-lg font-bold transition-all bg-blue-600 text-white shadow";
+          } else {
+            btn.className = "px-3 py-1.5 text-xs rounded-lg font-medium transition-all text-slate-400 hover:text-white";
+          }
+        }
+      });
+      renderAll();
+    }
+
+    function changeSentence() {
+      selectedSentenceIndex = parseInt(document.getElementById('sample-sentence').value);
+      spotlightWordIndex = 0;
+      selectedPos = 0;
+      renderAll();
+    }
+
+    function setSpotlight(idx) {
+      spotlightWordIndex = idx;
+      renderAll();
+    }
+
+    function toggleAutoPlay() {
+      isPlaying = !isPlaying;
+      const btnIcon = document.getElementById('play-icon');
+      const btnText = document.getElementById('play-text');
       
-      const startPos = getCoord(from, state.pegs[from].length);
-      const endPos = getCoord(to, targetFloor);
-      const peakY = 50; // 기둥 꼭대기 높이
-
-      // 1단계: 위로 상승
-      el.style.transition = `all ${state.speed * 0.3}ms ease-out`;
-      el.style.top = `${peakY}px`;
-      await wait(state.speed * 0.3);
-
-      // 2단계: 옆으로 이동
-      el.style.transition = `all ${state.speed * 0.4}ms ease-in-out`;
-      el.style.left = `${endPos.x - el.offsetWidth / 2}px`;
-      await wait(state.speed * 0.4);
-
-      // 3단계: 아래로 하강
-      el.style.transition = `all ${state.speed * 0.3}ms ease-in`;
-      el.style.top = `${endPos.y}px`;
-      await wait(state.speed * 0.3);
-
-      // 상태 업데이트
-      state.pegs[from].pop();
-      state.pegs[to].push(dNum);
-      state.isAnimating = false;
+      if (isPlaying) {
+        if (btnIcon) btnIcon.className = "ph-bold ph-pause text-amber-400";
+        if (btnText) btnText.innerText = "일시정지";
+        autoPlayTimer = setInterval(() => {
+          currentStep = (currentStep % 4) + 1;
+          setStep(currentStep);
+        }, 3500);
+      } else {
+        if (btnIcon) btnIcon.className = "ph-bold ph-play";
+        if (btnText) btnText.innerText = "자동 시연";
+        clearInterval(autoPlayTimer);
+      }
     }
 
-    function wait(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
+    // Master Render Function
+    function renderAll() {
+      renderVisualCanvas();
+      renderTheoryExplanation();
+      renderInteractiveDock();
+      renderMathInCanvas();
     }
 
-    async function run() {
-      if (!state.isPlaying || state.currentStep >= state.moves.length) {
-        state.isPlaying = false;
-        updatePlayBtn();
-        return;
+    function renderMathInCanvas() {
+      setTimeout(() => {
+        try {
+          if (typeof renderMathInElement === 'function') {
+            renderMathInElement(document.body, {
+              delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '$', right: '$', display: false}
+              ],
+              throwOnError: false
+            });
+          }
+        } catch(e) {
+          console.warn('Math render error:', e);
+        }
+      }, 30);
+    }
+
+    // 1. Render Visual Canvas Area
+    function renderVisualCanvas() {
+      const canvas = document.getElementById('visual-canvas');
+      const stepBadge = document.getElementById('visual-step-badge');
+      const levelBadge = document.getElementById('visual-level-badge');
+      const curSentData = sentences[selectedSentenceIndex];
+
+      const stepNames = ["1. 토큰화 (Tokenization)", "2. 임베딩 (Embedding)", "3. 인코더/문맥 (Encoder/Context)", "4. 어텐션/디코더 (Attention/Decoder)"];
+      const levelNames = ["Level 1: 비유 모드", "Level 2: 고등학생 모드", "Level 3: 심화(Q,K,V) 모드"];
+      
+      if (stepBadge) stepBadge.innerText = `STEP ${currentStep}: ${stepNames[currentStep-1]}`;
+      if (levelBadge) levelBadge.innerText = levelNames[currentLevel-1];
+
+      let html = "";
+
+      // Step 1: Tokenization
+      if (currentStep === 1) {
+        if (currentLevel === 1) {
+          html = `
+            <div class="flex flex-col items-center gap-6 w-full max-w-md">
+              <span class="text-xs text-slate-400">문장을 단어 카드(레고 블록)로 조각내기</span>
+              <div class="flex flex-wrap justify-center gap-2.5">
+                ${curSentData.tokens.map((tok, i) => `
+                  <div class="bg-gradient-to-b from-blue-500 to-blue-600 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-lg border border-blue-400/40 flex items-center gap-1.5 pulse-animation" style="animation-delay: ${i*0.1}s">
+                    <i class="ph-bold ph-puzzle-piece"></i> ${tok}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        } else if (currentLevel === 2) {
+          html = `
+            <div class="flex flex-col items-center gap-5 w-full max-w-lg">
+              <span class="text-xs text-slate-400">Subword (BPE) 토큰 분할 알고리즘</span>
+              <div class="flex flex-wrap justify-center gap-2">
+                ${curSentData.subwords.map(sub => `
+                  <div class="bg-indigo-950/80 border border-indigo-500/40 text-indigo-300 font-mono text-xs px-3 py-2 rounded-lg flex items-center gap-1">
+                    <span class="text-[10px] text-indigo-500 font-sans">tok:</span> ${sub}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        } else {
+          html = `
+            <div class="w-full max-w-md bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs space-y-3">
+              <div class="text-slate-400 text-[11px] font-sans flex items-center justify-between">
+                <span>Special Tokens Insertion</span>
+                <span class="text-emerald-400">Vocab Size: 30,522</span>
+              </div>
+              <div class="flex flex-wrap gap-1.5 justify-center">
+                <span class="bg-rose-950 text-rose-300 border border-rose-800 px-2 py-1 rounded">&lt;BOS&gt;</span>
+                ${curSentData.tokens.map(t => `<span class="bg-slate-800 text-slate-200 px-2 py-1 rounded">${t}</span>`).join('')}
+                <span class="bg-rose-950 text-rose-300 border border-rose-800 px-2 py-1 rounded">&lt;EOS&gt;</span>
+              </div>
+            </div>
+          `;
+        }
       }
 
-      const move = state.moves[state.currentStep];
-      addLog(state.currentStep + 1, move.n, move.from, move.to);
-      
-      await animateMove(move.n, move.from, move.to);
-      
-      state.currentStep++;
-      document.getElementById('current-moves').innerText = state.currentStep;
-      
-      if (state.isPlaying) setTimeout(run, 100);
+      // Step 2: Embedding
+      else if (currentStep === 2) {
+        if (currentLevel === 1) {
+          html = `
+            <div class="w-full max-w-md h-64 bg-slate-950 border border-slate-800 rounded-2xl relative p-4 overflow-hidden">
+              <div class="text-[10px] text-slate-500 absolute top-2 left-3">2D 의미 지도 (비슷한 단어끼리 가까이!)</div>
+              <div class="absolute inset-0 border border-dashed border-slate-800/60 m-8 rounded-xl pointer-events-none"></div>
+              ${curSentData.embedCoords.map(item => `
+                <div class="absolute flex flex-col items-center transform -translate-x-1/2 -translate-y-1/2 transition-all duration-500" style="left: ${item.x}%; top: ${item.y}%;">
+                  <div class="w-7 h-7 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300 flex items-center justify-center text-xs font-bold shadow-lg shadow-amber-500/20">
+                    <i class="ph-bold ph-map-pin"></i>
+                  </div>
+                  <span class="text-[11px] font-bold text-slate-200 mt-1 bg-slate-900/90 px-1.5 py-0.5 rounded border border-slate-700">${item.word}</span>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        } else if (currentLevel === 2) {
+          const rad = cosineAngle * Math.PI / 180;
+          const cosSim = Math.cos(rad).toFixed(3);
+          const vecAx = 70;
+          const vecAy = 0;
+          const vecBx = (70 * Math.cos(rad)).toFixed(1);
+          const vecBy = (-70 * Math.sin(rad)).toFixed(1);
+
+          html = `
+            <div class="w-full max-w-md space-y-3 text-center">
+              <span class="text-xs text-slate-400 font-medium">고차원 공간 벡터 & 코사인 유사도 (각도 $\\theta$ = <span id="angle-text-header" class="text-amber-400 font-bold">${cosineAngle}</span>°)</span>
+              
+              <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl flex flex-col items-center justify-center relative">
+                <svg width="200" height="110" viewBox="-10 -90 180 100" class="overflow-visible">
+                  <line x1="0" y1="0" x2="130" y2="0" stroke="#334155" stroke-width="2" />
+                  <line x1="0" y1="0" x2="0" y2="-75" stroke="#334155" stroke-width="2" />
+                  
+                  <line x1="0" y1="0" x2="${vecAx}" y2="${vecAy}" stroke="#60a5fa" stroke-width="3" />
+                  <text x="${vecAx + 5}" y="4" fill="#60a5fa" font-size="10" font-weight="bold">Vec A ("apple")</text>
+
+                  <line id="vec-b-line" x1="0" y1="0" x2="${vecBx}" y2="${vecBy}" stroke="#a78bfa" stroke-width="3" />
+                  <text id="vec-b-text" x="${parseFloat(vecBx) + 5}" y="${parseFloat(vecBy) - 3}" fill="#a78bfa" font-size="10" font-weight="bold">Vec B ("tree")</text>
+
+                  <path id="vec-arc-path" d="M 25 0 A 25 25 0 0 0 ${(25 * Math.cos(rad)).toFixed(1)} ${(-25 * Math.sin(rad)).toFixed(1)}" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="2,2" />
+                  <text id="vec-arc-text" x="32" y="-8" fill="#f59e0b" font-size="9" font-weight="bold">${cosineAngle}°</text>
+                </svg>
+
+                <div class="mt-2 w-full grid grid-cols-3 gap-2 font-mono text-xs border-t border-slate-800/80 pt-2">
+                  <div class="bg-slate-900/80 p-1.5 rounded border border-slate-800">
+                    <span class="text-blue-400 block text-[10px]">Vector A</span>
+                    <span class="text-slate-300 text-[11px]">[0.70, 0.00]</span>
+                  </div>
+                  <div class="bg-amber-950/50 p-1.5 rounded border border-amber-800/60">
+                    <span id="cos-sim-label" class="text-amber-400 block text-[10px] font-bold">cos(${cosineAngle}°)</span>
+                    <span id="cos-sim-val" class="text-amber-300 text-xs font-bold">${cosSim}</span>
+                  </div>
+                  <div class="bg-slate-900/80 p-1.5 rounded border border-slate-800">
+                    <span class="text-indigo-400 block text-[10px]">Vector B</span>
+                    <span id="vec-b-val" class="text-slate-300 text-[11px]">[${(0.7*Math.cos(rad)).toFixed(2)}, ${(0.7*Math.sin(rad)).toFixed(2)}]</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        } else {
+          // Lv 3 Embedding with Positional Encoding
+          const peVal = Math.sin(selectedPos / 100).toFixed(3);
+          html = `
+            <div class="w-full max-w-md space-y-3 font-mono text-xs text-center">
+              <span class="text-xs text-slate-400 font-sans">Sinusoidal Positional Encoding & Vector Addition</span>
+              <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-2">
+                <div class="text-slate-300 text-[11px]">
+                  $$PE_{(pos, 2i)} = \\sin\\left(\\frac{pos}{10000^{2i/d}}\\right)$$
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-[11px] pt-2 border-t border-slate-800">
+                  <div class="bg-blue-950/60 p-2 rounded border border-blue-800/60">
+                    <span class="text-blue-400 block text-[10px]">Word Embed</span>
+                    <span>[0.34, 0.62]</span>
+                  </div>
+                  <div class="text-slate-400 self-center font-bold text-sm">+</div>
+                  <div class="bg-amber-950/60 p-2 rounded border border-amber-800/60">
+                    <span id="pe-pos-label" class="text-amber-400 block text-[10px]">Pos Enc (pos=${selectedPos})</span>
+                    <span id="pe-vec-val">[${peVal}, ${(Math.cos(selectedPos/100)).toFixed(3)}]</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      // Step 3: Encoder Context
+      else if (currentStep === 3) {
+        if (currentLevel === 1) {
+          html = `
+            <div class="flex flex-col items-center gap-4 text-center">
+              <div class="w-24 h-24 rounded-full bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center text-white text-3xl shadow-2xl shadow-indigo-500/30 pulse-animation">
+                <i class="ph-bold ph-globe-hemisphere-west"></i>
+              </div>
+              <div>
+                <h4 class="text-sm font-bold text-slate-200">의미 압축 주머니 (Context Vector)</h4>
+                <p class="text-xs text-slate-400 max-w-xs mt-1">문장 전체의 뜻을 하나의 원액(에너지 구체)으로 농축했습니다.</p>
+              </div>
+            </div>
+          `;
+        } else if (currentLevel === 2) {
+          html = `
+            <div class="w-full max-w-md bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs font-mono space-y-3">
+              <span class="text-slate-400 font-sans block text-center">RNN / Transformer Encoder Context Vector</span>
+              <div class="flex items-center justify-between bg-slate-900 p-2.5 rounded border border-slate-800">
+                <span class="text-indigo-400 font-bold">Context Hidden State (h)</span>
+                <span class="text-slate-300">[0.84, -0.12, 0.95, 0.41, -0.73]</span>
+              </div>
+              <div class="text-[11px] text-slate-400 font-sans text-center">
+                문장의 모든 타임스텝 백터 정보가 통합 축적된 상태
+              </div>
+            </div>
+          `;
+        } else {
+          html = `
+            <div class="w-full max-w-md bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs font-mono space-y-3">
+              <div class="flex items-center justify-between text-slate-400 font-sans text-[11px]">
+                <span>Self-Attention Layer Output</span>
+                <span class="text-indigo-400">Dim: 512</span>
+              </div>
+              <div class="grid grid-cols-2 gap-2 text-[11px]">
+                <div class="bg-slate-900 p-2 rounded border border-slate-800">
+                  <span class="text-slate-500 block">Encoder Layer 1</span>
+                  <span class="text-emerald-400">Multi-Head Attn</span>
+                </div>
+                <div class="bg-slate-900 p-2 rounded border border-slate-800">
+                  <span class="text-slate-500 block">Encoder Layer 2</span>
+                  <span class="text-indigo-400">Feed Forward (FFN)</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      // Step 4: Attention & Decoder
+      else if (currentStep === 4) {
+        const curMap = curSentData.tokenMap[spotlightWordIndex] || curSentData.tokenMap[0];
+        if (currentLevel === 1) {
+          html = `
+            <div class="flex flex-col items-center gap-4 w-full max-w-md">
+              <span class="text-xs text-slate-400">번역 단어를 생성할 때, 원문의 관련 단어에 돋보기 조명을 쨉니다.</span>
+              
+              <!-- Words Spotlight Container -->
+              <div class="flex flex-wrap justify-center gap-2 relative p-2 bg-slate-950/80 rounded-xl border border-slate-800">
+                ${curSentData.tokens.map((tok, i) => `
+                  <button onclick="setSpotlight(${i})" class="relative px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${i === spotlightWordIndex ? 'bg-amber-400 text-slate-950 shadow-lg shadow-amber-400/40 ring-2 ring-amber-300 scale-105' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}">
+                    ${tok}
+                    ${i === spotlightWordIndex ? `<span class="absolute -top-3 left-1/2 transform -translate-x-1/2 text-amber-400 text-base"><i class="ph-fill ph-flashlight"></i></span>` : ''}
+                  </button>
+                `).join('')}
+              </div>
+
+              <!-- Output Translation Result -->
+              <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 w-full text-center space-y-2">
+                <span class="text-[11px] text-slate-500 font-semibold block">현재 조명 집중 번역 결과</span>
+                <div class="text-base font-bold text-emerald-400">
+                  "${curMap.src}" ➔ <span class="text-amber-300 underline underline-offset-4 decoration-amber-400">${curMap.tgt}</span>
+                </div>
+                <p class="text-xs text-slate-400">${curMap.desc}</p>
+              </div>
+            </div>
+          `;
+        } else if (currentLevel === 2) {
+          html = `
+            <div class="w-full max-w-md space-y-3 text-xs">
+              <div class="flex items-center justify-between text-slate-400">
+                <span>Attention Weights ($\text{Softmax}$ 분포)</span>
+                <span class="text-amber-400 font-bold font-mono">Temp: ${softmaxTemp}</span>
+              </div>
+              <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl space-y-2">
+                ${curSentData.tokens.map((tok, i) => {
+                  const weight = (curSentData.attentionWeights[i] || 0.1) / softmaxTemp;
+                  const pct = Math.min(100, Math.max(5, (weight * 100).toFixed(0)));
+                  return `
+                    <div class="flex items-center gap-2 text-[11px]">
+                      <span class="w-16 truncate text-slate-300 font-mono">${tok}</span>
+                      <div class="flex-1 bg-slate-900 h-3 rounded-full overflow-hidden border border-slate-800">
+                        <div class="bg-gradient-to-r from-blue-500 to-amber-400 h-full transition-all duration-300" style="width: ${pct}%"></div>
+                      </div>
+                      <span class="w-10 text-right text-slate-400 font-mono">${(weight*0.8).toFixed(2)}</span>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          `;
+        } else {
+          // Lv 3 Math Q, K, V
+          html = `
+            <div class="w-full max-w-md space-y-3 text-xs text-center font-mono">
+              <span class="text-slate-400 font-sans block">Scaled Dot-Product Attention ($Q, K, V$)</span>
+              <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3">
+                <div class="text-slate-200">
+                  $$\\text{Attention}(Q, K, V) = \\text{Softmax}\\left(\\frac{QK^T}{\\sqrt{d_k}}\\right)V$$
+                </div>
+                <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-800 text-[11px]">
+                  <button onclick="openMatrixModal('Q')" class="bg-blue-950/80 hover:bg-blue-900/80 border border-blue-700/60 p-2 rounded text-blue-300 transition">
+                    <span class="block font-bold">Query (Q)</span>
+                    <span class="text-[10px] text-slate-400">질문 텐서</span>
+                  </button>
+                  <button onclick="openMatrixModal('K')" class="bg-indigo-950/80 hover:bg-indigo-900/80 border border-indigo-700/60 p-2 rounded text-indigo-300 transition">
+                    <span class="block font-bold">Key (K)</span>
+                    <span class="text-[10px] text-slate-400">키 텐서</span>
+                  </button>
+                  <button onclick="openMatrixModal('V')" class="bg-emerald-950/80 hover:bg-emerald-900/80 border border-emerald-700/60 p-2 rounded text-emerald-300 transition">
+                    <span class="block font-bold">Value (V)</span>
+                    <span class="text-[10px] text-slate-400">값 텐서</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      if (canvas) canvas.innerHTML = html;
     }
 
-    function addLog(step, disk, from, to) {
-      const pegNames = ['A', 'B', 'C'];
-      const log = document.createElement('div');
-      log.className = 'text-xs p-2 bg-slate-50 rounded-lg border border-slate-100 flex justify-between items-center animate-in fade-in slide-in-from-left-2';
-      log.innerHTML = `
-        <span class="font-bold text-slate-400">#${step}</span>
-        <span class="font-semibold text-slate-700">원판 ${disk}</span>
-        <span class="text-indigo-500 font-bold">${pegNames[from]} → ${pegNames[to]}</span>
+    // 2. Render Theory Explanation
+    function renderTheoryExplanation() {
+      const titleEl = document.getElementById('theory-title');
+      const tagEl = document.getElementById('theory-tag');
+      const descEl = document.getElementById('theory-description');
+      const analogyBox = document.getElementById('analogy-box');
+      const analogyHeading = document.getElementById('analogy-heading');
+      const analogyText = document.getElementById('analogy-text');
+      const techPanel = document.getElementById('technical-panel');
+      const tensorShape = document.getElementById('tensor-shape');
+      const techCode = document.getElementById('technical-code');
+
+      const data = {
+        1: [
+          { title: "문장을 레고 블록으로 쪼개기", tag: "개념 이해", desc: "컴퓨터는 글자 전체를 한 번에 읽지 못합니다. 레고 조각처럼 단어나 아주 작은 단위로 문장을 나눕니다.", analogyHead: "중학생 비유", analogy: "긴 글을 읽기 전, 단어 카드 하나하나로 깔끔하게 정리하는 과정입니다." },
+          { title: "단어의 위치 지도 찾기", tag: "공간 이해", desc: "컴퓨터는 숫자로 생각합니다! 비슷한 뜻을 가진 단어는 의미 지도상에서 가까운 위치에 배치됩니다.", analogyHead: "중학생 비유", analogy: "'사과'와 '바나나'는 과일 코너에 함께 모아두는 정리함과 같습니다." },
+          { title: "핵심 뜻만 남겨 압축하기", tag: "문맥 이해", desc: "인코더가 한국어 문장의 뜻만 쏙 남겨 단 1개의 '에너지 구체(압축 원액)'로 만듭니다.", analogyHead: "중학생 비유", analogy: "오렌지 10개를 즙을 짜서 조그만 엑기스 병에 모아 담는 것과 같습니다." },
+          { title: "돋보기 조명 켜고 번역하기", tag: "어텐션 원리", desc: "영단어 하나를 쓸 때마다, 원문에서 가장 관련된 단어에 돋보기 조명을 다르게 비추며 번역합니다 (어텐션).", analogyHead: "중학생 비유", analogy: "긴 글을 번역할 때 한 번에 외워서 쓰지 않고, 관련 단어에 형광펜을 칠해가며 풀어쓰는 것과 같습니다." }
+        ],
+        2: [
+          { title: "Subword Tokenization (BPE)", tag: "토큰화 스펙", desc: "자주 쓰이는 단어 조합을 사전으로 구축하고, 처음 보는 복합어는 하위 단어(Subwords)로 정밀하게 분할합니다.", analogyHead: "고등학생 원리", analogy: "단어 사전 미등록 오류(OOV)를 방지하기 위해 단어를 어근과 접미사 단위로 분해합니다." },
+          { title: "Vector Embedding & Cosine Similarity", tag: "벡터 공간", desc: "단어를 $d$차원의 실수 벡터로 표현합니다. 두 단어 벡터 간의 각도 $\\theta$의 코사인 값 $\\cos(\\theta)$으로 유사도를 측정합니다.", analogyHead: "고등학생 원리", analogy: "각도 $\\theta=0^\\circ$이면 두 단어의 유사도가 $1.0$(동일), $90^\\circ$이면 $0.0$(무관)이 됩니다." },
+          { title: "Encoder Context State Vector", tag: "문맥 가중치", desc: "문장의 순서와 문맥 정보를 은닉 상태(Hidden State Vector $h_t$)에 누적하여 고차원 의미 공간에 매핑합니다.", analogyHead: "고등학생 원리", analogy: "단어들의 선후 관계 정보를 벡터 연산을 통해 정밀한 수치 덩어리로 변환합니다." },
+          { title: "Attention Weight & Softmax Distribution", tag: "확률 모델", desc: "디코더가 출력 단어를 생성할 때마다 입력 단어들과의 유사도를 계산하여 $\\text{Softmax}$ 확률 분포를 만듭니다.", analogyHead: "고등학생 원리", analogy: "가중치의 합이 $1.0(100\\%)$이 되도록 정규화하여 집중할 단어를 선택합니다." }
+        ],
+        3: [
+          { title: "Special Tokens & Vocab Tensor Indexing", tag: "트랜스포머 스펙", desc: "입력 문장의 시작과 끝을 알리는 특별 토큰(`<BOS>`, `<EOS>`)을 결합하고, Vocabulary Tensor ID로 변환합니다.", analogyHead: "심화 스펙", analogy: "Tensor Shape: [Batch, Seq_len] ➔ Int64 ID Indexing Matrix" },
+          { title: "Embedding + Sinusoidal Positional Encoding", tag: "위치 인코딩", desc: "행렬 연산을 시퀀스 순서와 관계없이 병렬 처리하기 위해, 삼각함수 파형 기반 Positional Vector $PE$를 가산합니다.", analogyHead: "심화 수식", analogy: "Input Tensor $X = E_{word} + PE_{pos}$" },
+          { title: "Encoder Hidden States & Multi-Head Self-Attention", tag: "Self-Attention", desc: "문장 내 자기 자신 단어들 간의 상관관계를 파악합니다. 대명사의 지칭 대상(Coreference Resolution)을 파악하는 핵심 단계입니다.", analogyHead: "심화 스펙", analogy: "Head 1: 주어-동사 연관 / Head 2: 지칭 대명사 매칭" },
+          { title: "Scaled Dot-Product Attention ($Q, K, V$)", tag: "어텐션 수식", desc: "Query, Key, Value 3가지 선형 변환 행렬 곱으로 어텐션을 계산합니다. $\\sqrt{d_k}$로 나눔으로써 기울기 소실을 방지합니다.", analogyHead: "심화 수식", analogy: "Attention(Q,K,V) = Softmax(QK^T / sqrt(d_k))V" }
+        ]
+      };
+
+      const curInfo = data[currentLevel][currentStep - 1];
+
+      if (titleEl) titleEl.innerHTML = `<i class="ph-bold ph-lightbulb text-amber-400 text-lg"></i> ${curInfo.title}`;
+      if (tagEl) tagEl.innerText = curInfo.tag;
+      if (descEl) descEl.innerHTML = curInfo.desc;
+      if (analogyHeading) analogyHeading.innerText = curInfo.analogyHead;
+      if (analogyText) analogyText.innerText = curInfo.analogy;
+
+      if (currentLevel === 1) {
+        if (techPanel) techPanel.classList.add('hidden');
+      } else {
+        if (techPanel) techPanel.classList.remove('hidden');
+        if (tensorShape) tensorShape.innerText = currentLevel === 2 ? `Shape: [1, ${sentences[selectedSentenceIndex].tokens.length}]` : `Shape: [1, ${sentences[selectedSentenceIndex].tokens.length}, 512]`;
+        
+        if (techCode) {
+          if (currentStep === 1) {
+            techCode.textContent = `// Subword Tokenization\ntokens = tokenizer.encode("${sentences[selectedSentenceIndex].text}")\n// Output IDs: [101, 2045, 3018, 1037, 6350, 102]`;
+          } else if (currentStep === 2) {
+            techCode.textContent = `// Vector Embedding & Cosine Sim\nE = embedding_layer(tokens)  # [1, N, d_model]\ncos_sim = dot(v1, v2) / (norm(v1) * norm(v2))`;
+          } else if (currentStep === 3) {
+            techCode.textContent = `// Transformer Encoder Pass\nH = EncoderLayer(E)  # [Batch, Seq_Len, Dim]\ncontext_vector = H.mean(dim=1)`;
+          } else {
+            techCode.textContent = `// Scaled Dot-Product Attention\nQ = X @ W_q; K = X @ W_k; V = X @ W_v\nattn_scores = softmax((Q @ K.T) / sqrt(d_k)) @ V`;
+          }
+        }
+      }
+    }
+
+    // 3. Render Interactive Control Dock
+    function renderInteractiveDock() {
+      const dock = document.getElementById('interactive-dock');
+      if (!dock) return;
+
+      let html = "";
+      const curSentData = sentences[selectedSentenceIndex];
+
+      if (currentLevel === 1) {
+        if (currentStep === 4) {
+          html = `
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <span class="text-slate-300 font-semibold flex items-center gap-1.5">
+                <i class="ph-bold ph-sliders-horizontal text-amber-400"></i> 돋보기 조명 단어 변경:
+              </span>
+              <div class="flex items-center gap-2">
+                <button onclick="setSpotlight(Math.max(0, spotlightWordIndex - 1))" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700">이전</button>
+                <span class="font-bold text-amber-400 font-mono px-2">${curSentData.tokens[spotlightWordIndex] || curSentData.tokens[0]}</span>
+                <button onclick="setSpotlight(Math.min(curSentData.tokens.length - 1, spotlightWordIndex + 1))" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700">다음</button>
+              </div>
+              <span class="text-[11px] text-slate-400">조명이 비추는 단어에 따라 번역 결과가 결정됩니다.</span>
+            </div>
+          `;
+        } else {
+          html = `
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <span class="flex items-center gap-1.5 text-slate-300 font-medium">
+                <i class="ph-bold ph-hand-pointing text-blue-400"></i> 탐구 가이드:
+              </span>
+              <span>상단 시연 버튼이나 단계 버튼(1~4)을 눌러 진행 상황을 탐색해 보세요!</span>
+            </div>
+          `;
+        }
+      } else if (currentLevel === 2) {
+        if (currentStep === 2) {
+          html = `
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <label class="text-slate-300 font-semibold flex items-center gap-2 shrink-0">
+                <i class="ph-bold ph-compass text-amber-400"></i> 코사인 각도 조절 ($\\theta$):
+                <span id="cosine-angle-val" class="text-amber-400 font-mono font-bold">${cosineAngle}°</span>
+              </label>
+              <input type="range" min="0" max="90" value="${cosineAngle}" oninput="updateAngle(this.value)" class="w-full sm:w-48 accent-amber-400 bg-slate-800 cursor-pointer">
+              <span class="text-[11px] text-slate-400 shrink-0">각도가 커질수록 ($\\cos\\theta\\to 0$) 두 단어의 유사도가 감소합니다.</span>
+            </div>
+          `;
+        } else if (currentStep === 4) {
+          html = `
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <label class="text-slate-300 font-semibold flex items-center gap-2 shrink-0">
+                <i class="ph-bold ph-thermometer text-rose-400"></i> Softmax 온도 (Temperature):
+                <span class="text-rose-400 font-mono font-bold">${softmaxTemp}</span>
+              </label>
+              <input type="range" min="0.2" max="2.0" step="0.1" value="${softmaxTemp}" oninput="updateTemp(this.value)" class="w-full sm:w-48 accent-rose-400 bg-slate-800 cursor-pointer">
+              <span class="text-[11px] text-slate-400 shrink-0">온도가 낮을수록 뾰족한 선택, 높을수록 다양한 확률 분포가 됩니다.</span>
+            </div>
+          `;
+        } else {
+          html = `<div class="text-xs text-slate-400 text-center">단계별 알고리즘을 확인하려면 상단 파이프라인 버튼을 클릭하세요.</div>`;
+        }
+      } else {
+        // Lv 3 Advanced
+        if (currentStep === 2) {
+          html = `
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <label class="text-slate-300 font-semibold flex items-center gap-2 shrink-0">
+                <i class="ph-bold ph-hash text-emerald-400"></i> 단어 위치 인덱스 ($pos$):
+                <span id="pe-pos-val-dock" class="text-emerald-400 font-mono font-bold">${selectedPos}</span>
+              </label>
+              <input type="range" min="0" max="10" value="${selectedPos}" oninput="updatePos(this.value)" class="w-full sm:w-48 accent-emerald-400 bg-slate-800 cursor-pointer">
+              <span class="text-[11px] text-slate-400 shrink-0">위치 인덱스에 따라 사인/코사인 파형 벡터가 다르게 가산됩니다.</span>
+            </div>
+          `;
+        } else {
+          html = `<div class="text-xs text-slate-400 text-center">행렬 계산의 세부 스펙을 보려면 주황/파랑 행렬 버튼을 클릭하세요.</div>`;
+        }
+      }
+
+      dock.innerHTML = html;
+    }
+
+    // Helper Interactive Handlers
+    function updateAngle(val) {
+      cosineAngle = parseInt(val);
+      const rad = cosineAngle * Math.PI / 180;
+      const cosSim = Math.cos(rad).toFixed(3);
+      const vecBx = (70 * Math.cos(rad)).toFixed(1);
+      const vecBy = (-70 * Math.sin(rad)).toFixed(1);
+
+      const vecBLine = document.getElementById('vec-b-line');
+      if (vecBLine) {
+        vecBLine.setAttribute('x2', vecBx);
+        vecBLine.setAttribute('y2', vecBy);
+
+        const vecBText = document.getElementById('vec-b-text');
+        if (vecBText) {
+          vecBText.setAttribute('x', (parseFloat(vecBx) + 5).toString());
+          vecBText.setAttribute('y', (parseFloat(vecBy) - 3).toString());
+        }
+
+        const vecArcPath = document.getElementById('vec-arc-path');
+        if (vecArcPath) {
+          vecArcPath.setAttribute('d', `M 25 0 A 25 25 0 0 0 ${(25 * Math.cos(rad)).toFixed(1)} ${(-25 * Math.sin(rad)).toFixed(1)}`);
+        }
+
+        const vecArcText = document.getElementById('vec-arc-text');
+        if (vecArcText) vecArcText.textContent = `${cosineAngle}°`;
+
+        const cosSimLabel = document.getElementById('cos-sim-label');
+        if (cosSimLabel) cosSimLabel.textContent = `cos(${cosineAngle}°)`;
+
+        const cosSimVal = document.getElementById('cos-sim-val');
+        if (cosSimVal) cosSimVal.textContent = cosSim;
+
+        const vecBVal = document.getElementById('vec-b-val');
+        if (vecBVal) vecBVal.textContent = `[${(0.7*Math.cos(rad)).toFixed(2)}, ${(0.7*Math.sin(rad)).toFixed(2)}]`;
+
+        const angleHeader = document.getElementById('angle-text-header');
+        if (angleHeader) angleHeader.textContent = `${cosineAngle}`;
+
+        const valEl = document.getElementById('cosine-angle-val');
+        if (valEl) valEl.innerText = `${cosineAngle}°`;
+      } else {
+        renderVisualCanvas();
+        const valEl = document.getElementById('cosine-angle-val');
+        if (valEl) valEl.innerText = `${cosineAngle}°`;
+        renderMathInCanvas();
+      }
+    }
+
+    function updatePos(val) {
+      selectedPos = parseInt(val);
+      const posLabel = document.getElementById('pe-pos-label');
+      const peVecVal = document.getElementById('pe-vec-val');
+      const posValDock = document.getElementById('pe-pos-val-dock');
+
+      if (posValDock) posValDock.textContent = selectedPos;
+
+      if (posLabel && peVecVal) {
+        const peVal = Math.sin(selectedPos / 100).toFixed(3);
+        const cosVal = Math.cos(selectedPos / 100).toFixed(3);
+        posLabel.textContent = `Pos Enc (pos=${selectedPos})`;
+        peVecVal.textContent = `[${peVal}, ${cosVal}]`;
+      } else {
+        renderVisualCanvas();
+        renderMathInCanvas();
+      }
+    }
+
+    function updateTemp(val) {
+      softmaxTemp = parseFloat(val);
+      renderVisualCanvas();
+    }
+
+    function openMatrixModal(type) {
+      const modal = document.getElementById('matrix-modal');
+      const body = document.getElementById('modal-body');
+      if (!modal || !body) return;
+
+      const titles = { Q: "Query Matrix (Q)", K: "Key Matrix (K)", V: "Value Matrix (V)" };
+      const descriptions = {
+        Q: "디코더의 질문 텐서입니다. 현재 단어가 입력 단어들의 어떤 정보에 주목해야 하는지 물어봅니다.",
+        K: "인코더의 키 텐서입니다. 각 입력 단어가 가진 암호형 식별표(Key)를 보유하고 있습니다.",
+        V: "인코더의 값 텐서입니다. 실제 번역문 생성에 추출하여 합성할 실체적 의미 정보(Value)를 담고 있습니다."
+      };
+
+      body.innerHTML = `
+        <div class="text-blue-400 font-bold text-sm">${titles[type]}</div>
+        <p class="text-slate-300 text-xs">${descriptions[type]}</p>
+        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-[11px] text-emerald-400 overflow-x-auto">
+          Matrix Shape: [Batch Size=1, Seq_Len=${sentences[selectedSentenceIndex].tokens.length}, d_k=64]<br/>
+          Sample Cell Val: [0.142, -0.891, 0.452, 0.021, ...]
+        </div>
       `;
-      logs.prepend(log);
+      modal.classList.remove('hidden');
     }
 
-    function updatePlayBtn() {
-      playPauseBtn.innerHTML = state.isPlaying 
-        ? `<i data-lucide="pause" class="w-5 h-5 fill-current"></i> 일시정지`
-        : `<i data-lucide="play" class="w-5 h-5 fill-current"></i> 시작하기`;
-      lucide.createIcons();
+    function closeModal() {
+      const modal = document.getElementById('matrix-modal');
+      if (modal) modal.classList.add('hidden');
     }
-
-    // 이벤트 리스너
-    playPauseBtn.addEventListener('click', () => {
-      state.isPlaying = !state.isPlaying;
-      updatePlayBtn();
-      if (state.isPlaying) run();
-    });
-
-    resetBtn.addEventListener('click', init);
-    diskRange.addEventListener('input', init);
-    speedRange.addEventListener('input', () => {
-      state.speed = parseInt(speedRange.value);
-    });
-
-    // 시작
-    init();
-
   </script>
 </body>
 </html>
